@@ -74,6 +74,11 @@ async function patchCompetition(req, res) {
     const id = req.params.id
     
     try {
+        if(req.body.date) {
+            let localDate = new Date(req.body.date)
+            let utcDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate()))
+            req.body.date = utcDate
+        }
         const competition = await Competition.findByIdAndUpdate(id, req.body)
         const newCompetition = await Competition.findById(id)
         if (!competition) res.status(400).send({ msg: "Error updating competition" })
@@ -81,6 +86,57 @@ async function patchCompetition(req, res) {
     } catch (error) {
         res.status(500).send(error)
         console.error(error)
+    }
+}
+
+async function getCompetitionsBySeason(req, res) {
+    console.log("GET /api/v/competitions/season/:season");
+
+    const season = req.params.season;
+    const startYearInt = parseInt(season, 10);
+
+    const startDate = new Date(`${startYearInt}-01-01`);
+    const endDate = new Date(`${startYearInt}-12-31`);
+
+    try {
+        const competitions = await Competition.find({
+            date: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        });
+        if(!competitions) res.status(400).send({ msg: "Error fetching competitions" })
+        else res.status(200).send({competitions: competitions});
+    } catch (error) {
+        res.status(500).send(error);
+        console.error(error)
+    }
+}
+
+async function getAllYears(req, res) {
+    console.log("GET /api/v/competitions/years");
+
+    try {
+        const years = await Competition.aggregate([
+            {
+                $group: {
+                    _id: { $year: "$date" }
+                }
+            },
+            {
+                $sort: { "_id": 1 }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    year: "$_id"
+                }
+            }
+        ]);
+
+        res.status(200).json(years.map(item => item.year));
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 }
 
@@ -131,5 +187,7 @@ module.exports = {
     getCompetition,
     postCompetition,
     patchCompetition,
+    getCompetitionsBySeason,
+    getAllYears,
     query,
 }
