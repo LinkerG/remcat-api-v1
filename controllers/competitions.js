@@ -1,8 +1,7 @@
 const Competition = require("../models/competitions")
-const Result = require("../models/results")
 
 async function getCompetitions(req, res) {
-    console.log("GET /api/v/competitions")
+    console.log("[GET] /api/v/competitions")
 
     const onlyActives = req.query.onlyActives === 'true'
 
@@ -17,7 +16,7 @@ async function getCompetitions(req, res) {
         if (!competitions || competitions.length === 0) {
             res.status(404).send({ msg: "No competitions found" })
         } else {
-            res.status(200).send({competitions: competitions})
+            res.status(200).send({ competitions: competitions })
         }
     } catch (error) {
         res.status(500).send({ msg: "Internal server error", error })
@@ -26,14 +25,14 @@ async function getCompetitions(req, res) {
 }
 
 
-async function getCompetition(req,res){
-    console.log("GET /api/v/competitions/:id")
+async function getCompetition(req, res) {
+    console.log("[GET] /api/v/competitions/:id")
     const id = req.params.id
     try {
         const competition = await Competition.findById(id)
-        
-        if(!competition) res.status(400).send({msg:"Competition not found"})
-        else res.status(200).send({competition: competition})
+
+        if (!competition) res.status(400).send({ msg: "Competition not found" })
+        else res.status(200).send({ competition: competition })
     } catch (error) {
         res.status(500).send(error)
         console.error(error)
@@ -41,11 +40,11 @@ async function getCompetition(req,res){
 }
 
 async function postCompetition(req, res) {
-    console.log("POST /api/v/competitions")
+    console.log("[POST] /api/v/competitions")
 
     const newCompetition = new Competition()
     const params = req.body
-    
+
     // Manage date for correct values
     let localDate = new Date(params.date)
     let utcDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate()))
@@ -71,12 +70,12 @@ async function postCompetition(req, res) {
 }
 
 async function patchCompetition(req, res) {
-    console.log("PATCH /api/v/competitions/:id")
+    console.log("[PATCH] /api/v/competitions/:id")
 
     const id = req.params.id
-    
+
     try {
-        if(req.body.date) {
+        if (req.body.date) {
             let localDate = new Date(req.body.date)
             let utcDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate()))
             req.body.date = utcDate
@@ -92,7 +91,7 @@ async function patchCompetition(req, res) {
 }
 
 async function getCompetitionsBySeason(req, res) {
-    console.log("GET /api/v/competitions/season/:season");
+    console.log("[GET] /api/v/competitions/season/:season");
 
     const season = req.params.season;
     const startYearInt = parseInt(season, 10);
@@ -107,8 +106,8 @@ async function getCompetitionsBySeason(req, res) {
                 $lte: endDate
             }
         });
-        if(!competitions) res.status(400).send({ msg: "Error fetching competitions" })
-        else res.status(200).send({competitions: competitions});
+        if (!competitions) res.status(400).send({ msg: "Error fetching competitions" })
+        else res.status(200).send({ competitions: competitions });
     } catch (error) {
         res.status(500).send(error);
         console.error(error)
@@ -116,7 +115,7 @@ async function getCompetitionsBySeason(req, res) {
 }
 
 async function getAllYears(req, res) {
-    console.log("GET /api/v/competitions/years");
+    console.log("[GET] /api/v/competitions/years");
 
     try {
         const years = await Competition.aggregate([
@@ -143,7 +142,7 @@ async function getAllYears(req, res) {
 }
 
 async function query(req, res) {
-    console.log("PATCH /api/v/competitions/query")
+    console.log("[POST] /api/v/competitions/query")
 
     try {
         const {
@@ -180,7 +179,7 @@ async function query(req, res) {
         if (!competitions || competitions.length === 0) {
             res.status(404).send({ msg: "No competitions found" })
         } else {
-            res.status(200).send({competitions: competitions})
+            res.status(200).send({ competitions: competitions })
         }
     } catch (error) {
         res.status(500).send({ msg: "Internal server error", error })

@@ -16,5 +16,8 @@
     "express-session": "^1.18.0",
     "mongoose": "^8.5.1",
     "nodemon": "^3.1.4"
+  },
+  "devDependencies": {
+    "prettier": "3.3.3"
   }
 }
