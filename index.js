@@ -1,4 +1,4 @@
-const api = require("./api")
+const api = require("./app/api")
 require('dotenv').config()
 const mongoose = require("mongoose")
 const port = process.env.PORT || 3333

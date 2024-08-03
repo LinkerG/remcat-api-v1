@@ -31,6 +31,16 @@ const competitionSchema = Schema({
         required: true,
         default: false
     },
+    isLeague: {
+        type: Boolean,
+        required: true,
+        default: false,
+    },
+    isChampionship: {
+        type: Boolean,
+        required: true,
+        default: false,
+    },
     isActive: {
         type: Boolean,
         required: true,

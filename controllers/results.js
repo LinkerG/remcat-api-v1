@@ -43,8 +43,6 @@ async function insertResult(competition_id, data){
     newResult.category = data.category
     if(data.time) newResult.time = data.time
     data.isFinal ? newResult.isFinal = data.isFinal : newResult.isFinal = false
-    data.isLeague ? newResult.isLeague = data.isLeague : newResult.isLeague = false
-    data.isChampionship ? newResult.isChampionship = data.isChampionship : newResult.isChampionship = false
     data.isValid ? newResult.isValid = data.isValid : newResult.isValid = true
 
     const result = await newResult.save()
@@ -98,8 +96,6 @@ async function processFinals(req, res){
                 teamShortName: result.teamShortName,
                 category: result.category,
                 isFinal: true,
-                isLeague: result.isLeague,
-                isChampionship: result.isChampionship,
             }
             const insertedNewResult = await insertResult(competition_id, newResultData)
             if(!insertedNewResult) hasErrors = true

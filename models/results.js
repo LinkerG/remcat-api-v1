@@ -24,16 +24,6 @@ const resultSchema = Schema({
         required: true,
         default: false,
     },
-    isLeague: {
-        type: Boolean,
-        required: true,
-        default: false,
-    },
-    isChampionship: {
-        type: Boolean,
-        required: true,
-        default: false,
-    },
     isValid: {
         type: Boolean,
         required: true,

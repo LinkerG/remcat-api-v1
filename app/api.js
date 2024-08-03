@@ -11,9 +11,9 @@ const apiVersion = "/v1"
 const baseRoute = "/api" + apiVersion
 
 //Cargar rutas
-const test = require("./router/test")
-const teams = require("./router/teams")
-const competitions = require("./router/competitions")
+const test = require("../router/test")
+const teams = require("../router/teams")
+const competitions = require("../router/competitions")
 
 //Rutas base
 app.use(baseRoute, test)

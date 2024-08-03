@@ -56,6 +56,8 @@ async function postCompetition(req, res) {
     newCompetition.boatType = params.boatType
     newCompetition.lines = params.lines
     newCompetition.lineDistance = params.lineDistance
+    params.isLeague ? newCompetition.isLeague = params.isLeague : newCompetition.isLeague = false
+    params.isChampionship ? newCompetition.isChampionship = params.isChampionship : newCompetition.isChampionship = false
 
     try {
         const competition = await newCompetition.save()
@@ -152,6 +154,8 @@ async function query(req, res) {
             lines,
             lineDistance,
             isCancelled,
+            isLeague,
+            isChampionship,
             isActive,
         } = req.body
 
@@ -167,6 +171,8 @@ async function query(req, res) {
         if (lines) filter.lines = lines
         if (lineDistance) filter.lineDistance = lineDistance
         if (isCancelled) filter.isCancelled = isCancelled
+        if (isLeague) filter.isLeague = isLeague
+        if (isChampionship) filter.isChampionship = isChampionship
         if (isActive) filter.isActive = isActive
 
         const competitions = await Competition.find(filter)
