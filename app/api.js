@@ -12,7 +12,7 @@ const apiVersion = "/v1"
 const baseRoute = "/api" + apiVersion
 
 // Cargar los middlewares
-const apiKeyMiddleware = require('../middlewares/apiKeyMiddleware');
+const apiKeyMiddleware = require('../middlewares/apiKeyMiddleWare');
 
 // Cargar rutas
 const test = require("../router/test")
