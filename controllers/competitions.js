@@ -24,7 +24,6 @@ async function getCompetitions(req, res) {
     }
 }
 
-
 async function getCompetition(req, res) {
     console.log("[GET] /api/v/competitions/:id")
     const id = req.params.id
@@ -114,6 +113,30 @@ async function getCompetitionsBySeason(req, res) {
     }
 }
 
+async function getNextCompetition(req, res) {
+    console.log("[GET] /api/v/competitions/nextCompetition")
+
+    try {
+        const now = new Date()
+        const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+
+        const competition = await Competition.findOne({
+            date: {
+                $gte: today
+            }
+        }).sort({ date: 1 })
+
+        if (!competition) {
+            return res.status(400).send({ msg: "No upcoming competitions found" })
+        }
+
+        return res.status(200).send({ competition: competition })
+    } catch (error) {
+        res.status(500).send(error)
+        console.error(error)
+    }
+}
+
 async function getAllYears(req, res) {
     console.log("[GET] /api/v/competitions/years");
 
@@ -194,5 +217,6 @@ module.exports = {
     patchCompetition,
     getCompetitionsBySeason,
     getAllYears,
+    getNextCompetition,
     query,
 }
