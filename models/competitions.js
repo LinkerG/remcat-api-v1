@@ -6,6 +6,10 @@ const competitionSchema = Schema({
         type: String,
         required: true,
     },
+    slug: {
+        type: String,
+        required: true,
+    },
     location: {
         type: String,
         required: true,

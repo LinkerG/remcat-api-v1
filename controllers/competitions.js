@@ -1,4 +1,5 @@
 const Competition = require("../models/competitions")
+const stringToSlug = require("../utils/stringToSlug")
 
 async function getCompetitions(req, res) {
     console.log("[GET] /api/v/competitions")
@@ -24,11 +25,25 @@ async function getCompetitions(req, res) {
     }
 }
 
-async function getCompetition(req, res) {
+async function getCompetitionById(req, res) {
     console.log("[GET] /api/v/competitions/:id")
     const id = req.params.id
     try {
         const competition = await Competition.findById(id)
+
+        if (!competition) res.status(400).send({ msg: "Competition not found" })
+        else res.status(200).send({ competition: competition })
+    } catch (error) {
+        res.status(500).send(error)
+        console.error(error)
+    }
+}
+
+async function getCompetitionBySlug(req, res) {
+    console.log("[GET] /api/v/competitions/:slug")
+    const slug = req.params.slug
+    try {
+        const competition = await Competition.findOne({ slug: slug })
 
         if (!competition) res.status(400).send({ msg: "Competition not found" })
         else res.status(200).send({ competition: competition })
@@ -49,6 +64,7 @@ async function postCompetition(req, res) {
     let utcDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate()))
 
     newCompetition.name = params.name
+    newCompetition.slug = stringToSlug(params.name)
     newCompetition.location = params.location
     newCompetition.date = utcDate
     newCompetition.boatType = params.boatType
@@ -212,7 +228,8 @@ async function query(req, res) {
 
 module.exports = {
     getCompetitions,
-    getCompetition,
+    getCompetitionById,
+    getCompetitionBySlug,
     postCompetition,
     patchCompetition,
     getCompetitionsBySeason,

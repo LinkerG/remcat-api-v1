@@ -1,6 +1,9 @@
+const stringToSlug = require("../../utils/stringToSlug")
+
 const competitions = [
     {
         name: '1a Regata de Lliga Llaüt Mediterrani',
+        slug: stringToSlug('1a Regata de Lliga Llaüt Mediterrani'),
         location: 'Badalona',
         date: new Date('2024-08-11'),
         boatType: 'llaut',
@@ -13,6 +16,7 @@ const competitions = [
     },
     {
         name: '2a Regata de Lliga Llaüt Mediterrani',
+        slug: stringToSlug('2a Regata de Lliga Llaüt Mediterrani'),
         location: 'Castelldefells',
         date: new Date('2024-08-18'),
         boatType: 'llaut',
@@ -25,6 +29,7 @@ const competitions = [
     },
     {
         name: '3a Regata de Lliga Llaüt Mediterrani',
+        slug: stringToSlug('3a Regata de Lliga Llaüt Mediterrani'),
         location: 'Tarragona',
         date: new Date('2024-08-25'),
         boatType: 'llaut',
@@ -37,6 +42,7 @@ const competitions = [
     },
     {
         name: 'Campionat de Catalunya de Batel',
+        slug: stringToSlug('Campionat de Catalunya de Batel'),
         location: 'Castelldefells',
         date: new Date('2024-08-24'),
         boatType: 'batel',
@@ -49,6 +55,7 @@ const competitions = [
     },
     {
         name: 'Campionat de Catalunya de Llagut català',
+        slug: stringToSlug('Campionat de Catalunya de Llagut català'),
         location: 'Deltebre',
         date: new Date('2024-09-08'),
         boatType: 'llagut',
