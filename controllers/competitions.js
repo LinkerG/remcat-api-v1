@@ -129,24 +129,24 @@ async function getCompetitionsBySeason(req, res) {
     }
 }
 
-async function getNextCompetition(req, res) {
-    console.log("[GET] /api/v/competitions/nextCompetition")
+async function getNextCompetitions(req, res) {
+    console.log("[GET] /api/v/competitions/nextCompetitions")
 
     try {
         const now = new Date()
         const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
 
-        const competition = await Competition.findOne({
+        const competitions = await Competition.find({
             date: {
                 $gte: today
             }
         }).sort({ date: 1 })
 
-        if (!competition) {
+        if (!competitions) {
             return res.status(400).send({ msg: "No upcoming competitions found" })
         }
 
-        return res.status(200).send({ competition: competition })
+        return res.status(200).send({ competitions: competitions })
     } catch (error) {
         res.status(500).send(error)
         console.error(error)
@@ -234,6 +234,6 @@ module.exports = {
     patchCompetition,
     getCompetitionsBySeason,
     getAllYears,
-    getNextCompetition,
+    getNextCompetitions,
     query,
 }

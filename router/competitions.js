@@ -9,7 +9,7 @@ api.post("/competitions", competitionController.postCompetition)
 api.post("/competitions/query", competitionController.query)
 api.get("/competitions/season/:season", competitionController.getCompetitionsBySeason)
 api.get("/competitions/years", competitionController.getAllYears)
-api.get("/competitions/nextCompetition", competitionController.getNextCompetition)
+api.get("/competitions/nextCompetitions", competitionController.getNextCompetitions)
 api.get("/competitions/slug/:slug", competitionController.getCompetitionBySlug)
 api.get("/competitions/:id", competitionController.getCompetitionById)
 // Resultados de una competicion
