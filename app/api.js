@@ -19,6 +19,7 @@ const test = require("../router/test")
 const teams = require("../router/teams")
 const competitions = require("../router/competitions")
 const users = require("../router/users")
+const league = require("../router/league")
 
 // Usar lso middlewares
 app.use(baseRoute, apiKeyMiddleware);
@@ -28,5 +29,6 @@ app.use(baseRoute, test)
 app.use(baseRoute, teams)
 app.use(baseRoute, competitions)
 app.use(baseRoute, users)
+app.use(baseRoute, league)
 
 module.exports = app

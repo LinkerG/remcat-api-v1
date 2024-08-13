@@ -1,0 +1,90 @@
+const Competition = require("../models/competitions")
+const Result = require("../models/results")
+const sortResults = require("../utils/sortResults")
+
+async function getLeagueBySeason(req, res) {
+    console.log("[GET] /api/v/league/:season")
+
+    const season = req.params.season
+    const startYearInt = parseInt(season, 10)
+
+    const startDate = new Date(`${startYearInt}-01-01`)
+    const endDate = new Date(`${startYearInt}-12-31`)
+
+    try {
+        const competitions = await Competition.find({
+            date: { $gte: startDate, $lte: endDate },
+            isLeague: true,
+        })
+
+        const competitionIds = competitions.map(competition => competition._id)
+
+        const results = await Result.find({
+            competition_id: { $in: competitionIds },
+            isValid: true,
+            //isFinal: true,
+        })
+
+        if (!competitions || !results) res.status(400).send({ error: "error" })
+
+        const leagues = []
+
+        competitions.forEach((competition) => {
+            const boatType = competition.boatType
+            const resultsForThisCompetition = results.filter(result => result.competition_id.equals(competition._id))
+
+            // Por cada competicion saca los resultados por "CAT" => [{resultado}]
+            const resultsByCategory = resultsForThisCompetition.reduce((acc, result) => {
+                if (!acc[result.category]) acc[result.category] = []
+
+                acc[result.category].push(result)
+                return acc
+            }, {})
+
+            // Por cada categoria de esa competicion ordena los resultados y suma los puntos
+            Object.entries(resultsByCategory).forEach(([category, categoryResults]) => {
+                const sortedResults = sortResults(categoryResults)
+                let points = 20
+                console.log(category)
+
+                sortedResults.forEach((result) => {
+                    const teamName = result.teamShortName
+                    console.log(teamName)
+                    console.log(points)
+
+                    let league = leagues.find(league => league.boatType === boatType && league.category === category)
+
+                    if (!league) {
+                        league = {
+                            boatType,
+                            category,
+                            teamResume: [],
+                        }
+                        leagues.push(league)
+                    }
+
+                    let team = league.teamResume.find(team => team.teamName === teamName)
+
+                    if (!team) {
+                        team = { teamName, points }
+                        league.teamResume.push(team)
+                    } else {
+                        team.points += points
+                    }
+
+                    points = Math.max(points - 1, 0)
+                })
+            })
+        })
+
+        res.status(200).send({ leagues })
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).send(error)
+    }
+}
+
+module.exports = {
+    getLeagueBySeason,
+}
