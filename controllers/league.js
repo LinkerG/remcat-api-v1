@@ -55,16 +55,16 @@ async function getLeagueBySeason(req, res) {
                         league = {
                             boatType,
                             category,
-                            teamResume: [],
+                            teamSummary: [],
                         }
                         leagues.push(league)
                     }
 
-                    let team = league.teamResume.find(team => team.teamName === teamName)
+                    let team = league.teamSummary.find(team => team.teamName === teamName)
 
                     if (!team) {
                         team = { teamName, points }
-                        league.teamResume.push(team)
+                        league.teamSummary.push(team)
                     } else {
                         team.points += points
                     }
