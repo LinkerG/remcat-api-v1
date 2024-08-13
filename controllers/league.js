@@ -31,7 +31,7 @@ async function getLeagueBySeason(req, res) {
 
         competitions.forEach((competition) => {
             const boatType = competition.boatType
-            const resultsForThisCompetition = results.filter(result => result.competition_id.equals(competition._id))
+            const resultsForThisCompetition = results.filter(result => result.competition_id == competition._id)
 
             // Por cada competicion saca los resultados por "CAT" => [{resultado}]
             const resultsByCategory = resultsForThisCompetition.reduce((acc, result) => {
@@ -45,12 +45,9 @@ async function getLeagueBySeason(req, res) {
             Object.entries(resultsByCategory).forEach(([category, categoryResults]) => {
                 const sortedResults = sortResults(categoryResults)
                 let points = 20
-                console.log(category)
 
                 sortedResults.forEach((result) => {
                     const teamName = result.teamShortName
-                    console.log(teamName)
-                    console.log(points)
 
                     let league = leagues.find(league => league.boatType === boatType && league.category === category)
 
