@@ -1,27 +1,38 @@
 const Competition = require("../models/competitions")
 const stringToSlug = require("../utils/stringToSlug")
+const setupCacheAdapter = require("../app/cache")
+const cacheAdapter = setupCacheAdapter(15);
+const longCache = setupCacheAdapter(24 * 60)
 
 async function getCompetitions(req, res) {
     console.log("[GET] /api/v/competitions")
+    const cacheKey = "competitions"
+    const cacheData = cacheAdapter.get(cacheKey)
 
-    const onlyActives = req.query.onlyActives === 'true'
+    if (cacheData) {
+        console.log("Cached ✅")
+        res.status(200).send({ competitions: cacheData })
+    } else {
+        const onlyActives = req.query.onlyActives === 'true'
 
-    try {
-        let filter = {}
-        if (onlyActives) {
-            filter.isActive = true
+        try {
+            let filter = {}
+            if (onlyActives) {
+                filter.isActive = true
+            }
+
+            const competitions = await Competition.find(filter).sort({ created_at: -1 })
+
+            if (!competitions || competitions.length === 0) {
+                res.status(404).send({ msg: "No competitions found" })
+            } else {
+                cacheAdapter.set(cacheKey, competitions)
+                res.status(200).send({ competitions: competitions })
+            }
+        } catch (error) {
+            res.status(500).send({ msg: "Internal server error", error })
+            console.error(error)
         }
-
-        const competitions = await Competition.find(filter).sort({ created_at: -1 })
-
-        if (!competitions || competitions.length === 0) {
-            res.status(404).send({ msg: "No competitions found" })
-        } else {
-            res.status(200).send({ competitions: competitions })
-        }
-    } catch (error) {
-        res.status(500).send({ msg: "Internal server error", error })
-        console.error(error)
     }
 }
 
@@ -107,26 +118,39 @@ async function patchCompetition(req, res) {
 
 async function getCompetitionsBySeason(req, res) {
     console.log("[GET] /api/v/competitions/season/:season");
-
     const season = req.params.season;
-    const startYearInt = parseInt(season, 10);
 
-    const startDate = new Date(`${startYearInt}-01-01`);
-    const endDate = new Date(`${startYearInt}-12-31`);
+    const cacheKey = "competitions" + season
+    const cacheData = cacheAdapter.get(cacheKey)
 
-    try {
-        const competitions = await Competition.find({
-            date: {
-                $gte: startDate,
-                $lte: endDate
-            }
-        });
-        if (!competitions) res.status(400).send({ msg: "Error fetching competitions" })
-        else res.status(200).send({ competitions: competitions });
-    } catch (error) {
-        res.status(500).send(error);
-        console.error(error)
+    if (cacheData) {
+        console.log("Cached ✅")
+        res.status(200).send({ competitions: cacheData })
     }
+    else {
+        const startYearInt = parseInt(season, 10);
+
+        const startDate = new Date(`${startYearInt}-01-01`);
+        const endDate = new Date(`${startYearInt}-12-31`);
+
+        try {
+            const competitions = await Competition.find({
+                date: {
+                    $gte: startDate,
+                    $lte: endDate
+                }
+            });
+            if (!competitions) res.status(400).send({ msg: "Error fetching competitions" })
+            else {
+                cacheAdapter.set(cacheKey, competitions)
+                res.status(200).send({ competitions: competitions });
+            }
+        } catch (error) {
+            res.status(500).send(error);
+            console.error(error)
+        }
+    }
+
 }
 
 async function getNextCompetitions(req, res) {
@@ -155,28 +179,39 @@ async function getNextCompetitions(req, res) {
 
 async function getAllYears(req, res) {
     console.log("[GET] /api/v/competitions/years");
+    const cacheKey = "years"
 
-    try {
-        const years = await Competition.aggregate([
-            {
-                $group: {
-                    _id: { $year: "$date" }
+    const cacheData = longCache.get(cacheKey)
+    if (cacheData) {
+        console.log("Cached ✅")
+        res.status(200).json(cacheData.map(item => item.year))
+    } else {
+        try {
+            const years = await Competition.aggregate([
+                {
+                    $group: {
+                        _id: { $year: "$date" }
+                    }
+                },
+                {
+                    $sort: { "_id": 1 }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        year: "$_id"
+                    }
                 }
-            },
-            {
-                $sort: { "_id": 1 }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    year: "$_id"
-                }
+            ]);
+
+            if (!years) res.status(400).send({ msg: "Error fetching years" })
+            else {
+                longCache.set(cacheKey, years)
+                res.status(200).json(years.map(item => item.year));
             }
-        ]);
-
-        res.status(200).json(years.map(item => item.year));
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 }
 
