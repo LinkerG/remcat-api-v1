@@ -1,38 +1,40 @@
+// Model
 const Competition = require("../models/competitions")
-const stringToSlug = require("../utils/stringToSlug")
-const setupCacheAdapter = require("../app/cache")
+// Cache
+const { setupCacheAdapter, handleCache } = require("../app/cache")
 const cacheAdapter = setupCacheAdapter(15);
 const longCache = setupCacheAdapter(24 * 60)
+// Utils
+const stringToSlug = require("../utils/stringToSlug")
 
 async function getCompetitions(req, res) {
-    console.log("[GET] /api/v/competitions")
-    const cacheKey = "competitions"
-    const cacheData = cacheAdapter.get(cacheKey)
+    console.log("[GET] /api/v/competitions");
+    const cacheKey = "competitions";
+    res.set('Cache-Control', 'public, max-age=900'); // 15 minutos
 
-    if (cacheData) {
-        console.log("Cached ✅")
-        res.status(200).send({ competitions: cacheData })
-    } else {
-        const onlyActives = req.query.onlyActives === 'true'
+    const onlyActives = req.query.onlyActives === 'true';
 
-        try {
-            let filter = {}
-            if (onlyActives) {
-                filter.isActive = true
-            }
+    try {
+        const competitions = await handleCache(cacheAdapter, cacheKey, () => getData(onlyActives));
 
-            const competitions = await Competition.find(filter).sort({ created_at: -1 })
-
-            if (!competitions || competitions.length === 0) {
-                res.status(404).send({ msg: "No competitions found" })
-            } else {
-                cacheAdapter.set(cacheKey, competitions)
-                res.status(200).send({ competitions: competitions })
-            }
-        } catch (error) {
-            res.status(500).send({ msg: "Internal server error", error })
-            console.error(error)
+        if (!competitions || competitions.length === 0) {
+            res.status(404).send({ msg: "No competitions found" });
+        } else {
+            res.status(200).send({ competitions });
         }
+    } catch (error) {
+        res.status(500).send({ msg: "Internal server error", error });
+        console.error(error);
+    }
+
+    async function getData(onlyActives) {
+        let filter = {};
+        if (onlyActives) {
+            filter.isActive = true;
+        }
+
+        const competitions = await Competition.find(filter).sort({ created_at: -1 });
+        return competitions;
     }
 }
 
@@ -118,42 +120,40 @@ async function patchCompetition(req, res) {
 
 async function getCompetitionsBySeason(req, res) {
     console.log("[GET] /api/v/competitions/season/:season");
+    res.set('Cache-Control', 'public, max-age=900'); // 15 minutos
+
     const season = req.params.season;
+    const cacheKey = `competitions-${season}`;
 
-    const cacheKey = "competitions" + season
-    const cacheData = cacheAdapter.get(cacheKey)
+    try {
+        const competitions = await handleCache(cacheAdapter, cacheKey, () => getData(season));
 
-    if (cacheData) {
-        console.log("Cached ✅")
-        res.status(200).send({ competitions: cacheData })
+        if (!competitions || competitions.length === 0) {
+            res.status(404).send({ msg: "No competitions found" });
+        } else {
+            res.status(200).send({ competitions });
+        }
+    } catch (error) {
+        res.status(500).send({ msg: "Internal server error", error });
+        console.error(error);
     }
-    else {
-        const startYearInt = parseInt(season, 10);
 
+    async function getData(season) {
+        const startYearInt = parseInt(season, 10);
         const startDate = new Date(`${startYearInt}-01-01`);
         const endDate = new Date(`${startYearInt}-12-31`);
 
-        try {
-            const competitions = await Competition.find({
-                date: {
-                    $gte: startDate,
-                    $lte: endDate
-                }
-            });
-            if (!competitions) res.status(400).send({ msg: "Error fetching competitions" })
-            else {
-                cacheAdapter.set(cacheKey, competitions)
-                res.status(200).send({ competitions: competitions });
+        return await Competition.find({
+            date: {
+                $gte: startDate,
+                $lte: endDate
             }
-        } catch (error) {
-            res.status(500).send(error);
-            console.error(error)
-        }
+        })
     }
-
 }
 
 async function getNextCompetitions(req, res) {
+    res.set('Cache-Control', 'public, max-age=900') // 15m
     console.log("[GET] /api/v/competitions/nextCompetitions")
 
     try {
@@ -179,39 +179,34 @@ async function getNextCompetitions(req, res) {
 
 async function getAllYears(req, res) {
     console.log("[GET] /api/v/competitions/years");
-    const cacheKey = "years"
+    res.set('Cache-Control', 'public, max-age=86400'); // 1 día
 
-    const cacheData = longCache.get(cacheKey)
-    if (cacheData) {
-        console.log("Cached ✅")
-        res.status(200).json(cacheData.map(item => item.year))
-    } else {
-        try {
-            const years = await Competition.aggregate([
-                {
-                    $group: {
-                        _id: { $year: "$date" }
-                    }
-                },
-                {
-                    $sort: { "_id": 1 }
-                },
-                {
-                    $project: {
-                        _id: 0,
-                        year: "$_id"
-                    }
+    const cacheKey = "years";
+
+    try {
+        const years = await handleCache(longCache, cacheKey, getData);
+        res.status(200).json(years.map(item => item.year));
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+
+    async function getData() {
+        return await Competition.aggregate([
+            {
+                $group: {
+                    _id: { $year: "$date" }
                 }
-            ]);
-
-            if (!years) res.status(400).send({ msg: "Error fetching years" })
-            else {
-                longCache.set(cacheKey, years)
-                res.status(200).json(years.map(item => item.year));
+            },
+            {
+                $sort: { "_id": 1 }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    year: "$_id"
+                }
             }
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
+        ]);
     }
 }
 

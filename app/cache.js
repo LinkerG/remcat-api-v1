@@ -10,4 +10,19 @@ function setupCacheAdapter(ttlMinutes) {
     return cacheAdapter
 }
 
-module.exports = setupCacheAdapter
+async function handleCache(cacheAdapter, key, fetchFunction) {
+    // Intentar obtener datos desde la caché
+    const cachedData = await cacheAdapter.get(key);
+    if (cachedData) {
+        console.log("Cached ✅");
+        return cachedData;
+    }
+
+    // Si no hay datos en la caché, obtenerlos a través de la función de consulta
+    const freshData = await fetchFunction();
+    // Almacenar los datos frescos en la caché
+    await cacheAdapter.set(key, freshData);
+    return freshData;
+}
+
+module.exports = { setupCacheAdapter, handleCache }
