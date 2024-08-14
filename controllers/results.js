@@ -1,16 +1,32 @@
+// Model
 const Result = require("../models/results")
+// Cache
+const { setupCacheAdapter, handleCache } = require("../app/cache")
+const cacheAdapter = setupCacheAdapter(15)
+const smallCache = setupCacheAdapter(1)
 
 async function getResultsFromCompetition(req, res) {
-    console.log("[GET] /api/v/competitions/:id/results")
-    const id = req.params.id
-    try {
-        const results = await Result.find({ competition_id: [id] })
+    console.log("[GET] /api/v/competitions/:id/results");
 
-        if (!results) res.status(400).send({ msg: "Competition not found" })
-        else res.status(200).send({ results: results })
+    const id = req.params.id;
+    const cacheKey = `results-${id}`;
+    res.set('Cache-Control', 'public, max-age=300') // 5 minutos
+
+    try {
+        const results = await handleCache(smallCache, cacheKey, () => getData(id));
+
+        if (!results || results.length === 0) {
+            res.status(404).send({ msg: "Results not found" });
+        } else {
+            res.status(200).send({ results });
+        }
     } catch (error) {
-        res.status(500).send(error)
-        console.error(error)
+        console.error(error);
+        res.status(500).send({ error: "Internal server error" });
+    }
+
+    async function getData(id) {
+        return await Result.find({ competition_id: id });
     }
 }
 

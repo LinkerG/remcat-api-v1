@@ -2,39 +2,40 @@
 const Competition = require("../models/competitions")
 // Cache
 const { setupCacheAdapter, handleCache } = require("../app/cache")
-const cacheAdapter = setupCacheAdapter(15);
+const cacheAdapter = setupCacheAdapter(15)
+const smallCache = setupCacheAdapter(1)
 const longCache = setupCacheAdapter(24 * 60)
 // Utils
 const stringToSlug = require("../utils/stringToSlug")
 
 async function getCompetitions(req, res) {
-    console.log("[GET] /api/v/competitions");
-    const cacheKey = "competitions";
-    res.set('Cache-Control', 'public, max-age=900'); // 15 minutos
+    console.log("[GET] /api/v/competitions")
+    const cacheKey = "competitions"
+    res.set('Cache-Control', 'public, max-age=900') // 15 minutos
 
-    const onlyActives = req.query.onlyActives === 'true';
+    const onlyActives = req.query.onlyActives === 'true'
 
     try {
-        const competitions = await handleCache(cacheAdapter, cacheKey, () => getData(onlyActives));
+        const competitions = await handleCache(cacheAdapter, cacheKey, () => getData(onlyActives))
 
         if (!competitions || competitions.length === 0) {
-            res.status(404).send({ msg: "No competitions found" });
+            res.status(404).send({ msg: "No competitions found" })
         } else {
-            res.status(200).send({ competitions });
+            res.status(200).send({ competitions })
         }
     } catch (error) {
-        res.status(500).send({ msg: "Internal server error", error });
-        console.error(error);
+        res.status(500).send({ msg: "Internal server error", error })
+        console.error(error)
     }
 
     async function getData(onlyActives) {
-        let filter = {};
+        let filter = {}
         if (onlyActives) {
-            filter.isActive = true;
+            filter.isActive = true
         }
 
-        const competitions = await Competition.find(filter).sort({ created_at: -1 });
-        return competitions;
+        const competitions = await Competition.find(filter).sort({ created_at: -1 })
+        return competitions
     }
 }
 
@@ -53,16 +54,27 @@ async function getCompetitionById(req, res) {
 }
 
 async function getCompetitionBySlug(req, res) {
-    console.log("[GET] /api/v/competitions/:slug")
-    const slug = req.params.slug
-    try {
-        const competition = await Competition.findOne({ slug: slug })
+    console.log("[GET] /api/v/competitions/:slug");
 
-        if (!competition) res.status(400).send({ msg: "Competition not found" })
-        else res.status(200).send({ competition: competition })
+    const slug = req.params.slug;
+    const cacheKey = `competition-${slug}`;
+    res.set('Cache-Control', 'public, max-age=900') // 15 minutos
+
+    try {
+        const competition = await handleCache(cacheAdapter, cacheKey, () => getData(slug));
+
+        if (!competition) {
+            res.status(404).send({ msg: "Competition not found" });
+        } else {
+            res.status(200).send({ competition });
+        }
     } catch (error) {
-        res.status(500).send(error)
-        console.error(error)
+        console.error(error);
+        res.status(500).send({ error: "Internal server error" });
+    }
+
+    async function getData(slug) {
+        return await Competition.findOne({ slug });
     }
 }
 
@@ -119,29 +131,29 @@ async function patchCompetition(req, res) {
 }
 
 async function getCompetitionsBySeason(req, res) {
-    console.log("[GET] /api/v/competitions/season/:season");
-    res.set('Cache-Control', 'public, max-age=900'); // 15 minutos
+    console.log("[GET] /api/v/competitions/season/:season")
+    res.set('Cache-Control', 'public, max-age=900') // 15 minutos
 
-    const season = req.params.season;
-    const cacheKey = `competitions-${season}`;
+    const season = req.params.season
+    const cacheKey = `competitions-${season}`
 
     try {
-        const competitions = await handleCache(cacheAdapter, cacheKey, () => getData(season));
+        const competitions = await handleCache(cacheAdapter, cacheKey, () => getData(season))
 
         if (!competitions || competitions.length === 0) {
-            res.status(404).send({ msg: "No competitions found" });
+            res.status(404).send({ msg: "No competitions found" })
         } else {
-            res.status(200).send({ competitions });
+            res.status(200).send({ competitions })
         }
     } catch (error) {
-        res.status(500).send({ msg: "Internal server error", error });
-        console.error(error);
+        res.status(500).send({ msg: "Internal server error", error })
+        console.error(error)
     }
 
     async function getData(season) {
-        const startYearInt = parseInt(season, 10);
-        const startDate = new Date(`${startYearInt}-01-01`);
-        const endDate = new Date(`${startYearInt}-12-31`);
+        const startYearInt = parseInt(season, 10)
+        const startDate = new Date(`${startYearInt}-01-01`)
+        const endDate = new Date(`${startYearInt}-12-31`)
 
         return await Competition.find({
             date: {
@@ -178,16 +190,16 @@ async function getNextCompetitions(req, res) {
 }
 
 async function getAllYears(req, res) {
-    console.log("[GET] /api/v/competitions/years");
-    res.set('Cache-Control', 'public, max-age=86400'); // 1 día
+    console.log("[GET] /api/v/competitions/years")
+    res.set('Cache-Control', 'public, max-age=86400') // 1 día
 
-    const cacheKey = "years";
+    const cacheKey = "years"
 
     try {
-        const years = await handleCache(longCache, cacheKey, getData);
-        res.status(200).json(years.map(item => item.year));
+        const years = await handleCache(longCache, cacheKey, getData)
+        res.status(200).json(years.map(item => item.year))
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message })
     }
 
     async function getData() {
@@ -206,7 +218,7 @@ async function getAllYears(req, res) {
                     year: "$_id"
                 }
             }
-        ]);
+        ])
     }
 }
 
