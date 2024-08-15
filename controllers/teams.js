@@ -1,4 +1,5 @@
 const Team = require("../models/teams")
+//const uploadFile = require("../app/imageUpload")
 
 async function getTeams(req, res) {
     console.log("[GET] /api/v/teams")
@@ -40,23 +41,30 @@ async function getTeam(req, res) {
 }
 
 async function postTeams(req, res) {
-    console.log("[POST] /api/v/teams")
+    console.log("[POST] /api/v/teams");
 
-    const newTeam = new Team()
-    const params = req.body
+    const newTeam = new Team();
+    const params = req.body;
 
-    newTeam.name = params.name
-    newTeam.shortName = params.shortName
-    params.image != "" ? newTeam.image = params.image : "default.png"
+
+    newTeam.name = params.name;
+    newTeam.shortName = params.shortName;
+
+    const imageName = req.files[0].filename
+
+    newTeam.image = imageName
 
     try {
-        const team = await newTeam.save()
+        const team = await newTeam.save();
 
-        if (!team) res.status(400).send({ msg: "Error creating team" })
-        else res.status(200).send({ team: team })
+        if (!team) {
+            res.status(400).send({ msg: "Error creando el equipo" });
+        } else {
+            res.status(200).send({ team: team });
+        }
     } catch (error) {
-        res.status(500).send(error)
-        console.error(error)
+        res.status(500).send(error);
+        console.error(error);
     }
 }
 
