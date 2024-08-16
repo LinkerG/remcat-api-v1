@@ -195,30 +195,31 @@ async function getAllYears(req, res) {
     const cacheKey = "years"
 
     try {
-        const years = await handleCache(longCache, cacheKey, getData)
+        const years = await handleCache(longCache, cacheKey, getYears)
         res.status(200).json(years.map(item => item.year))
     } catch (error) {
         res.status(500).json({ error: error.message })
     }
 
-    async function getData() {
-        return await Competition.aggregate([
-            {
-                $group: {
-                    _id: { $year: "$date" }
-                }
-            },
-            {
-                $sort: { "_id": 1 }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    year: "$_id"
-                }
+}
+
+async function getYears() {
+    return await Competition.aggregate([
+        {
+            $group: {
+                _id: { $year: "$date" }
             }
-        ])
-    }
+        },
+        {
+            $sort: { "_id": 1 }
+        },
+        {
+            $project: {
+                _id: 0,
+                year: "$_id"
+            }
+        }
+    ])
 }
 
 async function query(req, res) {
@@ -277,4 +278,5 @@ module.exports = {
     getAllYears,
     getNextCompetitions,
     query,
+    getYears,
 }

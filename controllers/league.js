@@ -15,86 +15,88 @@ async function getLeagueBySeason(req, res) {
     res.set('Cache-Control', 'public, max-age=300') // 5 minutos
 
     try {
-        const leagues = await handleCache(cacheAdapter, cacheKey, () => getData(season))
+        const leagues = await handleCache(cacheAdapter, cacheKey, () => getLeagueData(season))
         res.status(200).send({ leagues })
     } catch (error) {
         console.error(error)
         res.status(500).send({ error: "Internal server error" })
     }
 
-    async function getData(season) {
-        const startYearInt = parseInt(season, 10)
-        const startDate = new Date(`${startYearInt}-01-01`)
-        const endDate = new Date(`${startYearInt}-12-31`)
+}
 
-        const competitions = await Competition.find({
-            date: { $gte: startDate, $lte: endDate },
-            isLeague: true,
-        })
+async function getLeagueData(season) {
+    const startYearInt = parseInt(season, 10)
+    const startDate = new Date(`${startYearInt}-01-01`)
+    const endDate = new Date(`${startYearInt}-12-31`)
 
-        if (!competitions) {
-            throw new Error("No competitions found")
-        }
+    const competitions = await Competition.find({
+        date: { $gte: startDate, $lte: endDate },
+        isLeague: true,
+    })
 
-        const competitionIds = competitions.map(competition => competition._id)
+    if (!competitions) {
+        throw new Error("No competitions found")
+    }
 
-        const results = await Result.find({
-            competition_id: { $in: competitionIds },
-            isValid: true,
-        })
+    const competitionIds = competitions.map(competition => competition._id)
 
-        if (!results) {
-            throw new Error("No results found")
-        }
+    const results = await Result.find({
+        competition_id: { $in: competitionIds },
+        isValid: true,
+    })
 
-        const leagues = []
+    if (!results) {
+        throw new Error("No results found")
+    }
 
-        competitions.forEach((competition) => {
-            const boatType = competition.boatType
-            const resultsForThisCompetition = results.filter(result => result.competition_id == competition._id)
+    const leagues = []
 
-            const resultsByCategory = resultsForThisCompetition.reduce((acc, result) => {
-                if (!acc[result.category]) acc[result.category] = []
-                acc[result.category].push(result)
-                return acc
-            }, {})
+    competitions.forEach((competition) => {
+        const boatType = competition.boatType
+        const resultsForThisCompetition = results.filter(result => result.competition_id == competition._id)
 
-            Object.entries(resultsByCategory).forEach(([category, categoryResults]) => {
-                const sortedResults = sortResults(categoryResults)
-                let points = 20
+        const resultsByCategory = resultsForThisCompetition.reduce((acc, result) => {
+            if (!acc[result.category]) acc[result.category] = []
+            acc[result.category].push(result)
+            return acc
+        }, {})
 
-                sortedResults.forEach((result) => {
-                    const teamName = result.teamShortName
+        Object.entries(resultsByCategory).forEach(([category, categoryResults]) => {
+            const sortedResults = sortResults(categoryResults)
+            let points = 20
 
-                    let league = leagues.find(league => league.boatType === boatType && league.category === category)
+            sortedResults.forEach((result) => {
+                const teamName = result.teamShortName
 
-                    if (!league) {
-                        league = {
-                            boatType,
-                            category,
-                            teamSummary: [],
-                        }
-                        leagues.push(league)
+                let league = leagues.find(league => league.boatType === boatType && league.category === category)
+
+                if (!league) {
+                    league = {
+                        boatType,
+                        category,
+                        teamSummary: [],
                     }
+                    leagues.push(league)
+                }
 
-                    let team = league.teamSummary.find(team => team.teamName === teamName)
+                let team = league.teamSummary.find(team => team.teamName === teamName)
 
-                    if (!team) {
-                        team = { teamName, points }
-                        league.teamSummary.push(team)
-                    } else {
-                        team.points += points
-                    }
+                if (!team) {
+                    team = { teamName, points }
+                    league.teamSummary.push(team)
+                } else {
+                    team.points += points
+                }
 
-                    points = Math.max(points - 1, 0)
-                })
+                points = Math.max(points - 1, 0)
             })
         })
+    })
 
-        return leagues
-    }
+    return leagues
 }
 
 module.exports = {
     getLeagueBySeason,
+    getLeagueData
 }
