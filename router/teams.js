@@ -1,11 +1,13 @@
-const express = require("express")
-const teamController = require("../controllers/teams")
+const express = require("express");
+const teamController = require("../controllers/teams");
 
-const api = express.Router()
+const imageMiddleware = require("../middlewares/teamImageMiddleware")
 
-api.get("/teams", teamController.getTeams)
-api.post("/teams", teamController.postTeams)
-api.get("/teams/:name", teamController.getTeam)
-api.patch("/teams/:id", teamController.patchTeam)
+const api = express.Router();
 
-module.exports = api
+api.get("/teams", teamController.getTeams);
+api.post("/teams", imageMiddleware.any(), teamController.postTeams);
+api.get("/teams/:name", teamController.getTeam);
+api.patch("/teams/:id", teamController.patchTeam);
+
+module.exports = api;
