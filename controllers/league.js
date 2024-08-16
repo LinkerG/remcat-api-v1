@@ -74,16 +74,16 @@ async function getLeagueData(season) {
                     league = {
                         boatType,
                         category,
-                        teamSummary: [],
+                        leagueSummary: [],
                     }
                     leagues.push(league)
                 }
 
-                let team = league.teamSummary.find(team => team.teamName === teamName)
+                let team = league.leagueSummary.find(team => team.teamName === teamName)
 
                 if (!team) {
                     team = { teamName, points }
-                    league.teamSummary.push(team)
+                    league.leagueSummary.push(team)
                 } else {
                     team.points += points
                 }

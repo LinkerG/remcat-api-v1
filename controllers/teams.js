@@ -141,7 +141,7 @@ async function getResume(teamName) {
 
         let competitionResults = [];
         leagues.forEach((league) => {
-            const sortedResults = league.teamSummary.sort((a, b) => b.points - a.points);
+            const sortedResults = league.leagueSummary.sort((a, b) => b.points - a.points);
             const position = sortedResults.findIndex((result) => result.teamName === teamName) + 1;
 
             competitionResults.push({
