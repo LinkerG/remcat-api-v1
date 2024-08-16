@@ -3,7 +3,6 @@ const Competition = require("../models/competitions")
 // Cache
 const { setupCacheAdapter, handleCache } = require("../app/cache")
 const cacheAdapter = setupCacheAdapter(15)
-const smallCache = setupCacheAdapter(1)
 const longCache = setupCacheAdapter(24 * 60)
 // Utils
 const stringToSlug = require("../utils/stringToSlug")

@@ -1,45 +1,65 @@
+// Model
 const Team = require("../models/teams")
+// Cache
+const { setupCacheAdapter, handleCache } = require("../app/cache")
+const cacheAdapter = setupCacheAdapter(15)
+// Utils
 const getTeamImages = require("../utils/getTeamImages")
 
 async function getTeams(req, res) {
-    console.log("[GET] /api/v/teams")
+    console.log("[GET] /api/v/teams");
 
-    const onlyActives = req.query.onlyActives === 'true'
+    const onlyActives = req.query.onlyActives === 'true';
+    const cacheKey = `teams-${onlyActives}`;
+    res.set('Cache-Control', 'public, max-age=1800') // 30 minutos
 
     try {
-        let filter = {}
-        if (onlyActives) {
-            filter.isActive = true
-        }
-
-        const teams = await Team.find(filter).sort({ created_at: -1 })
+        const teams = await handleCache(cacheAdapter, cacheKey, () => getData());
 
         if (!teams || teams.length === 0) {
-            res.status(400).send({ msg: "No teams found" })
+            res.status(404).send({ msg: "No teams found" });
         } else {
-            const teamsWithImages = await getTeamImages(teams)
-            res.status(200).send({ teams: teamsWithImages })
+            const teamsWithImages = await getTeamImages(teams);
+            res.status(200).send({ teams: teamsWithImages });
         }
     } catch (error) {
-        res.status(500).send({ msg: "Internal server error", error })
-        console.error(error)
+        console.error(error);
+        res.status(500).send({ msg: "Internal server error", error });
+    }
+
+    async function getData() {
+        let filter = {};
+        if (onlyActives) {
+            filter.isActive = true;
+        }
+
+        return await Team.find(filter).sort({ created_at: -1 });
     }
 }
 
 async function getTeam(req, res) {
-    console.log("[GET] /api/v/teams/:name")
-    const shortName = req.params.name
-    try {
-        const team = await Team.findOne({ shortName: shortName })
+    console.log("[GET] /api/v/teams/:name");
 
-        if (!team) res.status(400).send({ msg: "Team not found" })
-        else {
-            const teamWithImage = await getTeamImages([team])
-            res.status(200).send({ team: teamWithImage[0] })
+    const shortName = req.params.name;
+    const cacheKey = `team-${shortName}`;
+    res.set('Cache-Control', 'public, max-age=1800') // 30 minutos
+
+    try {
+        const team = await handleCache(cacheAdapter, cacheKey, () => getData());
+
+        if (!team) {
+            res.status(404).send({ msg: "Team not found" });
+        } else {
+            const teamWithImage = await getTeamImages([team]);
+            res.status(200).send({ team: teamWithImage[0] });
         }
     } catch (error) {
-        res.status(500).send(error)
-        console.error(error)
+        console.error(error);
+        res.status(500).send({ error: "Internal server error" });
+    }
+
+    async function getData() {
+        return await Team.findOne({ shortName });
     }
 }
 
