@@ -1,5 +1,5 @@
 const Team = require("../models/teams")
-//const uploadFile = require("../app/imageUpload")
+const getTeamImages = require("../utils/getTeamImages")
 
 async function getTeams(req, res) {
     console.log("[GET] /api/v/teams")
@@ -17,7 +17,8 @@ async function getTeams(req, res) {
         if (!teams || teams.length === 0) {
             res.status(400).send({ msg: "No teams found" })
         } else {
-            res.status(200).send({ teams: teams })
+            const teamsWithImages = await getTeamImages(teams)
+            res.status(200).send({ teams: teamsWithImages })
         }
     } catch (error) {
         res.status(500).send({ msg: "Internal server error", error })
@@ -25,15 +26,17 @@ async function getTeams(req, res) {
     }
 }
 
-
 async function getTeam(req, res) {
     console.log("[GET] /api/v/teams/:name")
     const shortName = req.params.name
     try {
-        const team = await Team.findOne({ shortName: [shortName] })
+        const team = await Team.findOne({ shortName: shortName })
 
         if (!team) res.status(400).send({ msg: "Team not found" })
-        else res.status(200).send({ team: team })
+        else {
+            const teamWithImage = await getTeamImages([team])
+            res.status(200).send({ team: teamWithImage[0] })
+        }
     } catch (error) {
         res.status(500).send(error)
         console.error(error)
