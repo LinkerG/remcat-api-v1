@@ -2,6 +2,9 @@
 const Team = require("../models/teams")
 const Competition = require("../models/competitions")
 const Result = require("../models/results")
+// Model functions
+const { getYears } = require("./competitions")
+const { getLeagueData } = require("./league")
 // Cache
 const { setupCacheAdapter, handleCache } = require("../app/cache")
 const cacheAdapter = setupCacheAdapter(15)
@@ -81,10 +84,11 @@ async function getTeamResume(req, res) {
 
         let teamResume = [];
 
-        const championships = competitions.filter(competition => competition.isChampionship === true);
+        const championships = competitions.filter(competition => competition.isChampionship);
 
         championships.forEach(competition => {
-            let yearResume = teamResume.find(year => year.year === competition.date.getFullYear());
+            const year = competition.date.getFullYear();
+            let yearResume = teamResume.find(yearRes => yearRes.year === year);
 
             const resultsForThisCompetition = results.filter(result => result.competition_id == competition._id);
             const resultsByCategory = resultsForThisCompetition.reduce((acc, result) => {
@@ -98,35 +102,64 @@ async function getTeamResume(req, res) {
             Object.entries(resultsByCategory).forEach(([category, categoryResults]) => {
                 const sortedResults = sortResults(categoryResults);
                 const position = sortedResults.findIndex((result) => result.teamShortName === teamName) + 1;
-                let result = sortedResults.filter(res => res.teamShortName === teamName)[0];
-                let a = {
-                    "competition_name": competition.name,
-                    "competition_id": result.competition_id,
-                    "category": result.category,
-                    "position": position
-                };
-                competitionResults.push(a);
+                const result = sortedResults.find(res => res.teamShortName === teamName);
+
+                if (result) {
+                    competitionResults.push({
+                        "competition_name": competition.name,
+                        "category": result.category,
+                        "position": position
+                    });
+                }
             });
 
             if (!yearResume) {
-                yearResume = {
-                    "year": competition.date.getFullYear(),
+                teamResume.push({
+                    "year": year,
                     "results": competitionResults,
-                };
-                teamResume.push(yearResume);
+                });
             } else {
                 yearResume.results.push(...competitionResults);
             }
         });
 
+        const years = await getYears();
+        for (const yearObject of years) {
+            const year = yearObject.year;
+            const leagues = await getLeagueData(year);
+
+            let competitionResults = [];
+            leagues.forEach((league) => {
+                const sortedResults = league.teamSummary.sort((a, b) => b.points - a.points);
+                const position = sortedResults.findIndex((result) => result.teamName === teamName) + 1;
+
+                competitionResults.push({
+                    "competition_name": league.boatType,
+                    "category": league.category,
+                    "position": position
+                });
+            });
+
+            let yearResume = teamResume.find(yearRes => yearRes.year === year);
+
+            if (!yearResume) {
+                teamResume.push({
+                    "year": year,
+                    "results": competitionResults,
+                });
+            } else {
+                yearResume.results.push(...competitionResults);
+            }
+        }
+
         console.log(teamResume);
+
         res.status(200).send({ resume: teamResume });
     } catch (error) {
         console.error(error);
         res.status(500).send({ error: "Internal server error" });
     }
 }
-
 
 async function postTeams(req, res) {
     console.log("[POST] /api/v/teams");
