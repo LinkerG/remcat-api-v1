@@ -3,7 +3,7 @@ const Competition = require("../models/competitions")
 // Cache
 const { setupCacheAdapter, handleCache } = require("../app/cache")
 const cacheAdapter = setupCacheAdapter(15)
-const longCache = setupCacheAdapter(24 * 60)
+//const longCache = setupCacheAdapter(24 * 60)
 // Utils
 const stringToSlug = require("../utils/stringToSlug")
 
@@ -190,12 +190,12 @@ async function getNextCompetitions(req, res) {
 
 async function getAllYears(req, res) {
     console.log("[GET] /api/v/competitions/years")
-    res.set('Cache-Control', 'public, max-age=86400') // 1 día
+    res.set('Cache-Control', 'public, max-age=900') // 15 min
 
     const cacheKey = "years"
 
     try {
-        const years = await handleCache(longCache, cacheKey, getYears)
+        const years = await handleCache(cacheAdapter, cacheKey, getYears)
         res.status(200).json(years.map(item => item.year))
     } catch (error) {
         res.status(500).json({ error: error.message })
